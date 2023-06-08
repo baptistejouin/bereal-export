@@ -1,22 +1,25 @@
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 import json
 import requests, certifi
 from io import BytesIO
 import os
+from datetime import datetime
+
+ANTI_ALIASING = 2
 
 PARAM_FRONT_IMAGE = {
-    "width": 1772,
-    "height": 1181,
+    "width": 1772 * ANTI_ALIASING,
+    "height": 1181 * ANTI_ALIASING,
 }
 
 PARAM_BACK_IMAGE = {
     "offset_x": int(0.021 * PARAM_FRONT_IMAGE["height"]),
     "offset_y": int(0.021 * PARAM_FRONT_IMAGE["height"]),
-    "width": 0.3095 * PARAM_FRONT_IMAGE["width"],
-    "height": 0.3095 * PARAM_FRONT_IMAGE["height"],
+    "width": 0.4095 * PARAM_FRONT_IMAGE["width"],
+    "height": 0.4095 * PARAM_FRONT_IMAGE["height"],
     "radius": 0.0222 * PARAM_FRONT_IMAGE["width"],
     "strokeColor": "black",
-    "strokeWidth": 5,
+    "strokeWidth": int(0.00282 * PARAM_FRONT_IMAGE["width"]),
 }
 
 
@@ -67,6 +70,31 @@ def make_rounded_mask(im):
     return out
 
 
+def add_beareal_moment(im, moment, isLate):
+    datetime_obj = datetime.strptime(moment, "%Y-%m-%dT%H:%M:%S.%fZ")
+    beareal_moment = datetime_obj.strftime("%d%m%Y %H:%M")
+    if isLate:
+        beareal_moment = beareal_moment + " (late)"
+    else:
+        beareal_moment = beareal_moment + " (real)"
+
+    text = Image.new("L", im.size, 0)
+    draw = ImageDraw.Draw(text)
+    font = ImageFont.truetype("./assets/font/genera.ttf", im.width // 35)
+    draw.text((0, 0), beareal_moment, fill=255, font=font)
+    out = im.copy()
+    out.paste(
+        text,
+        (
+            im.width - PARAM_BACK_IMAGE["offset_x"] * 13,
+            im.height - PARAM_BACK_IMAGE["offset_y"] * 2,
+        ),
+        text,
+    )
+
+    return out
+
+
 def process_image_pair(item_1, item_2):
     front_image_1 = downloadImage(item_1["frontImage"]["path"])
     back_image_1 = downloadImage(item_1["backImage"]["path"])
@@ -76,6 +104,10 @@ def process_image_pair(item_1, item_2):
     front_image_1 = resizeWithRatio(
         front_image_1, PARAM_FRONT_IMAGE["width"], PARAM_FRONT_IMAGE["height"]
     )
+    front_image_1 = add_beareal_moment(
+        front_image_1, item_1["takenTime"], item_1["isLate"]
+    )
+
     back_image_1 = resizeWithRatio(
         back_image_1, PARAM_BACK_IMAGE["width"], PARAM_BACK_IMAGE["height"]
     )
@@ -89,6 +121,10 @@ def process_image_pair(item_1, item_2):
     front_image_2 = resizeWithRatio(
         front_image_2, PARAM_FRONT_IMAGE["width"], PARAM_FRONT_IMAGE["height"]
     )
+    front_image_2 = add_beareal_moment(
+        front_image_2, item_2["takenTime"], item_2["isLate"]
+    )
+
     back_image_2 = resizeWithRatio(
         back_image_2, PARAM_BACK_IMAGE["width"], PARAM_BACK_IMAGE["height"]
     )
@@ -136,6 +172,12 @@ if __name__ == "__main__":
         )
         newImage.paste(front_image_1, (0, 0), front_image_1)
         newImage.paste(front_image_2, (front_image_1.width, 0), front_image_2)
+
+        # the only way to get something like anti-aliasing (for outline and text)
+        newImage = newImage.resize(
+            (newImage.width // ANTI_ALIASING, newImage.height // ANTI_ALIASING),
+            Image.LANCZOS,
+        )
 
         # create dir if not exist
         os.makedirs("output", exist_ok=True)
