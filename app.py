@@ -2,6 +2,7 @@ from PIL import Image, ImageDraw
 import json
 import requests, certifi
 from io import BytesIO
+import os
 
 PARAM_FRONT_IMAGE = {
     "width": 1772,
@@ -136,4 +137,7 @@ if __name__ == "__main__":
         newImage.paste(front_image_1, (0, 0), front_image_1)
         newImage.paste(front_image_2, (front_image_1.width, 0), front_image_2)
 
-        newImage.show()
+        # create dir if not exist
+        os.makedirs("output", exist_ok=True)
+
+        newImage.save(f"output/{i}.jpg")
