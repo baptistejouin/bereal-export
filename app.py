@@ -183,3 +183,4 @@ if __name__ == "__main__":
         os.makedirs("output", exist_ok=True)
 
         newImage.save(f"output/{i}.jpg")
+        print(f"Image {i} saved")
