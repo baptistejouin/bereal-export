@@ -3,19 +3,20 @@ import json
 import requests, certifi
 from io import BytesIO
 
-PARAM_BACK_IMAGE = {
-    "offset_x": 52,
-    "offset_y": 52,
-    "width": 450,
-    "height": 604,
-    "radius": 60.0,
-    "strokeColor": "black",
-    "strokeWidth": 15,
-}
 
 PARAM_FRONT_IMAGE = {
     "width": 1772,
     "height": 1181,
+}
+
+PARAM_BACK_IMAGE = {
+    "offset_x": int(0.021 * PARAM_FRONT_IMAGE["height"]),
+    "offset_y": int(0.021 * PARAM_FRONT_IMAGE["height"]),
+    "width": 0.3095 * PARAM_FRONT_IMAGE["width"],
+    "height": 0.3095 * PARAM_FRONT_IMAGE["height"],
+    "radius": 0.0222 * PARAM_FRONT_IMAGE["width"],
+    "strokeColor": "black",
+    "strokeWidth": 5,
 }
 
 # load json file
@@ -29,7 +30,7 @@ def convertURL(bucket, path):
 
 def downloadImage(url):
     response = requests.get(url, verify=certifi.where())
-    img = Image.open(BytesIO(response.content))
+    img = Image.open(BytesIO(response.content)).convert("RGBA")
     return img
 
 
@@ -47,17 +48,27 @@ def resizeWithRatio(image, resizeWidth, resizeHeight):
     return image.resize((new_width, new_height))
 
 
-def back_image_mask(im):
-    mask = Image.new("L", im.size, "black")
+def make_rounded_mask(im):
+    # rounded the image
+    mask = Image.new("L", im.size, 0)
     draw = ImageDraw.Draw(mask)
-    x1 = PARAM_BACK_IMAGE["offset_x"]
-    y1 = PARAM_BACK_IMAGE["offset_y"]
-    x2 = im.width + PARAM_BACK_IMAGE["offset_x"]
-    y2 = im.height + PARAM_BACK_IMAGE["offset_y"]
-    radius = PARAM_BACK_IMAGE["radius"]
-    draw.rounded_rectangle([(x1, y1), (x2, y2)], fill=255, radius=radius)
-    out = im.copy().convert("RGBA")
+    draw.rounded_rectangle(
+        [(0, 0), (im.width, im.height)], fill=255, radius=PARAM_BACK_IMAGE["radius"]
+    )
+    out = im.copy()
     out.putalpha(mask)
+
+    # add black stroke
+    mask = Image.new("L", im.size, 0)
+    draw = ImageDraw.Draw(mask)
+    draw.rounded_rectangle(
+        [(0, 0), (im.width, im.height)],
+        fill=0,
+        radius=PARAM_BACK_IMAGE["radius"],
+        outline=255,
+        width=PARAM_BACK_IMAGE["strokeWidth"],
+    )
+    out.paste(PARAM_BACK_IMAGE["strokeColor"], mask=mask)
     return out
 
 
@@ -86,13 +97,12 @@ for i in range(0, len(dataFormatted), 2):
     # download front and back image
     front_image_1 = downloadImage(item_1["frontImage"]["path"])
     back_image_1 = downloadImage(item_1["backImage"]["path"])
-
     front_image_2 = downloadImage(item_2["frontImage"]["path"])
     back_image_2 = downloadImage(item_2["backImage"]["path"])
 
     # create new image
     newImage = Image.new(
-        "RGBA", (PARAM_FRONT_IMAGE["width"], PARAM_FRONT_IMAGE["height"])
+        "RGB", (PARAM_FRONT_IMAGE["width"], PARAM_FRONT_IMAGE["height"])
     )
 
     # first images (resize)
@@ -104,15 +114,20 @@ for i in range(0, len(dataFormatted), 2):
     )
 
     # apply mask to back_image_1
-    back_image_1 = back_image_mask(back_image_1)
+    back_image_1 = make_rounded_mask(back_image_1)
+
+    # newImage.paste(front_image_1, (0, 0), front_image_1)
+    # newImage.show()
+    # exit()
 
     # paste back_image_1 on front_image_1
     front_image_1.paste(
-        back_image_1, (PARAM_BACK_IMAGE["offset_x"], PARAM_BACK_IMAGE["offset_y"])
+        back_image_1,
+        (PARAM_BACK_IMAGE["offset_x"], PARAM_BACK_IMAGE["offset_y"]),
+        back_image_1,
     )
 
-    front_image_1 = front_image_1.convert("RGBA")
-    newImage.paste(front_image_1, (0, 0))
+    newImage.paste(front_image_1, (0, 0), front_image_1)
 
     # second images (resize)
     front_image_2 = resizeWithRatio(
@@ -123,17 +138,16 @@ for i in range(0, len(dataFormatted), 2):
     )
 
     # apply mask to back_image_2
-    back_image_2 = back_image_mask(back_image_2)
+    back_image_2 = make_rounded_mask(back_image_2)
 
     # paste back_image_2 on front_image_2
     front_image_2.paste(
-        back_image_2, (PARAM_BACK_IMAGE["offset_x"], PARAM_BACK_IMAGE["offset_y"])
+        back_image_2,
+        (PARAM_BACK_IMAGE["offset_x"], PARAM_BACK_IMAGE["offset_y"]),
+        back_image_2,
     )
 
-    # Convert front_image_2 to RGBA mode
-    front_image_2 = front_image_2.convert("RGBA")
-
-    newImage.paste(front_image_2, (front_image_1.width, 0))
+    newImage.paste(front_image_2, (front_image_1.width, 0), front_image_2)
 
     # save new image
     newImage.show()
