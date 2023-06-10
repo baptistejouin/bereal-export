@@ -1,0 +1,46 @@
+{
+  "data": [
+    {
+      "id": "",
+      "thumbnail": {
+        "url": "",
+        "width": 98,
+        "height": 130
+      },
+      "primary": {
+        "url": "https://storage.bere.al/Photos/AbfqcmwUmAWiM1j4vI7NONAwCHs2/bereal/17750a05-d675-41fe-a505-5378dfdb34fb-1648747262.jpg",
+        "width": 1500,
+        "height": 2000
+      },
+      "secondary": {
+        "url": "https://storage.bere.al/Photos/AbfqcmwUmAWiM1j4vI7NONAwCHs2/bereal/17750a05-d675-41fe-a505-5378dfdb34fb-1648747262-secondary.jpg",
+        "width": 1500,
+        "height": 2000
+      },
+      "isLate": false,
+      "memoryDay": "2000-01-01",
+      "location": null
+    },
+    {
+      "id": "",
+      "thumbnail": {
+        "url": "",
+        "width": 98,
+        "height": 130
+      },
+      "primary": {
+        "url": "https://storage.bere.al/Photos/AbfqcmwUmAWiM1j4vI7NONAwCHs2/bereal/17750a05-d675-41fe-a505-5378dfdb34fb-1648747262.jpg",
+        "width": 1500,
+        "height": 2000
+      },
+      "secondary": {
+        "url": "https://storage.bere.al/Photos/AbfqcmwUmAWiM1j4vI7NONAwCHs2/bereal/17750a05-d675-41fe-a505-5378dfdb34fb-1648747262-secondary.jpg",
+        "width": 1500,
+        "height": 2000
+      },
+      "isLate": true,
+      "memoryDay": "2000-01-01",
+      "location": null
+    }
+  ]
+}

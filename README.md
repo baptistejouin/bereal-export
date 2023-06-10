@@ -28,5 +28,5 @@ Not implemented yet, but you can hit the API endpoint `https://mobile.bereal.com
 git clone git@github.com:baptistejouin/bereal-export-py.git
 
 # Run the script
-python bereal-export-py/app.py --token <your bearer token> --json <path to your json file> --output <path to your output folder>
+python bereal-export-py/app.py --json <path to your json file> --output <path to your output folder>
 ```
