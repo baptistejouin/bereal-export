@@ -2,6 +2,8 @@
 
 This tool has been designed to export your bereal memories outside the app (from a json source file) in photo format (10cm x 15cm). Each photo contains 2 Bereals, which can then be cut out after printing.
 
+<img width="1251" alt="image" src="https://github.com/baptistejouin/bereal-export-py/assets/92529084/61818e27-580a-49b5-b823-7cbf13527845">
+
 ## How to use
 
 ### 1. Install dependencies
