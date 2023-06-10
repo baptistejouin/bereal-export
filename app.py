@@ -157,6 +157,7 @@ if __name__ == "__main__":
     for i in range(0, len(data), 2):
         item_1 = data[i]
         item_2 = data[i + 1]
+        currentIndex = (i + 2) // 2
 
         front_image_1, front_image_2 = process_image_pair(item_1, item_2)
 
@@ -173,8 +174,8 @@ if __name__ == "__main__":
         )
 
         # get file path
-        file_path = os.path.join(args.output, f"{i}.jpg")
+        file_path = os.path.join(args.output, f"{currentIndex}.jpg")
 
         newImage.save(file_path, "JPEG", quality=100, optimize=True)
-        print(f"Image {(i+2)//2}/{len(data)//2} saved")
+        print(f"Image {currentIndex}/{len(data)//2} saved")
     print(f"\nDone, {len(data)//2} images saved in {args.output}")
