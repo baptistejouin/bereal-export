@@ -2,29 +2,25 @@ from PIL import Image, ImageDraw, ImageFont
 import json
 import requests, certifi
 from io import BytesIO
+import argparse
 import os
-from datetime import datetime
 
 ANTI_ALIASING = 2
 
 PARAM_FRONT_IMAGE = {
-    "width": 1772 * ANTI_ALIASING,
-    "height": 1181 * ANTI_ALIASING,
+    "width": 1500 * ANTI_ALIASING,
+    "height": 1000 * ANTI_ALIASING,
 }
 
 PARAM_BACK_IMAGE = {
     "offset_x": int(0.021 * PARAM_FRONT_IMAGE["height"]),
     "offset_y": int(0.021 * PARAM_FRONT_IMAGE["height"]),
-    "width": 0.4095 * PARAM_FRONT_IMAGE["width"],
-    "height": 0.4095 * PARAM_FRONT_IMAGE["height"],
+    "width": 0.3995 * PARAM_FRONT_IMAGE["width"],
+    "height": 0.3995 * PARAM_FRONT_IMAGE["height"],
     "radius": 0.0222 * PARAM_FRONT_IMAGE["width"],
     "strokeColor": "black",
     "strokeWidth": int(0.00282 * PARAM_FRONT_IMAGE["width"]),
 }
-
-
-def convertURL(bucket, path):
-    return f"https://{bucket}{path}"
 
 
 def downloadImage(url):
@@ -71,8 +67,7 @@ def make_rounded_mask(im):
 
 
 def add_beareal_moment(im, moment, isLate):
-    datetime_obj = datetime.strptime(moment, "%Y-%m-%dT%H:%M:%S.%fZ")
-    beareal_moment = datetime_obj.strftime("%d%m%Y %H:%M")
+    beareal_moment = moment
     if isLate:
         beareal_moment = beareal_moment + " (late)"
     else:
@@ -86,7 +81,7 @@ def add_beareal_moment(im, moment, isLate):
     out.paste(
         text,
         (
-            im.width - PARAM_BACK_IMAGE["offset_x"] * 13,
+            im.width - PARAM_BACK_IMAGE["offset_x"] * 10,
             im.height - PARAM_BACK_IMAGE["offset_y"] * 2,
         ),
         text,
@@ -96,16 +91,16 @@ def add_beareal_moment(im, moment, isLate):
 
 
 def process_image_pair(item_1, item_2):
-    front_image_1 = downloadImage(item_1["frontImage"]["path"])
-    back_image_1 = downloadImage(item_1["backImage"]["path"])
-    front_image_2 = downloadImage(item_2["frontImage"]["path"])
-    back_image_2 = downloadImage(item_2["backImage"]["path"])
+    front_image_1 = downloadImage(item_1["primary"]["url"])
+    back_image_1 = downloadImage(item_1["secondary"]["url"])
+    front_image_2 = downloadImage(item_2["primary"]["url"])
+    back_image_2 = downloadImage(item_2["secondary"]["url"])
 
     front_image_1 = resizeWithRatio(
         front_image_1, PARAM_FRONT_IMAGE["width"], PARAM_FRONT_IMAGE["height"]
     )
     front_image_1 = add_beareal_moment(
-        front_image_1, item_1["takenTime"], item_1["isLate"]
+        front_image_1, item_1["memoryDay"], item_1["isLate"]
     )
 
     back_image_1 = resizeWithRatio(
@@ -122,7 +117,7 @@ def process_image_pair(item_1, item_2):
         front_image_2, PARAM_FRONT_IMAGE["width"], PARAM_FRONT_IMAGE["height"]
     )
     front_image_2 = add_beareal_moment(
-        front_image_2, item_2["takenTime"], item_2["isLate"]
+        front_image_2, item_2["memoryDay"], item_2["isLate"]
     )
 
     back_image_2 = resizeWithRatio(
@@ -139,31 +134,29 @@ def process_image_pair(item_1, item_2):
 
 
 if __name__ == "__main__":
+    # Create a parser
+    parser = argparse.ArgumentParser()
+
+    # Add a parameter
+    parser.add_argument("-j", "--json", help="JSON input path", required=True)
+    parser.add_argument("-o", "--output", help="Output directory path", required=True)
+
+    # Parse the argument
+    args = parser.parse_args()
+
     # load json file
-    with open("data/memories.json") as file:
-        data = json.load(file)
-
-    # convert url to merge bucket and path to obtain the full url
-    dataFormatted = []
-    for item in data:
-        frontImage = item["frontImage"]
-        backImage = item["backImage"]
-
-        frontImage["path"] = convertURL(frontImage["bucket"], frontImage["path"])
-        backImage["path"] = convertURL(backImage["bucket"], backImage["path"])
-
-        item.update({"frontImage": frontImage, "backImage": backImage})
-        dataFormatted.append(item)
+    with open(args.json) as file:
+        data = json.load(file)["data"]
 
     # check if data length is even (we draw 2 images at a time)
-    if len(dataFormatted) % 2 != 0:
+    if len(data) % 2 != 0:
         print("Error: data length is not even")
         exit()
 
     # for each item
-    for i in range(0, len(dataFormatted), 2):
-        item_1 = dataFormatted[i]
-        item_2 = dataFormatted[i + 1]
+    for i in range(0, len(data), 2):
+        item_1 = data[i]
+        item_2 = data[i + 1]
 
         front_image_1, front_image_2 = process_image_pair(item_1, item_2)
 
@@ -179,8 +172,9 @@ if __name__ == "__main__":
             Image.LANCZOS,
         )
 
-        # create dir if not exist
-        os.makedirs("output", exist_ok=True)
+        # get file path
+        file_path = os.path.join(args.output, f"{i}.jpg")
 
-        newImage.save(f"output/{i}.jpg")
-        print(f"Image {i} saved")
+        newImage.save(file_path, "JPEG", quality=100, optimize=True)
+        print(f"Image {(i+2)//2}/{len(data)//2} saved")
+    print(f"\nDone, {len(data)//2} images saved in {args.output}")
